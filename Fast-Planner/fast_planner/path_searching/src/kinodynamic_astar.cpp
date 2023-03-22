@@ -136,7 +136,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
         if (pro_state(0) <= origin_(0) || pro_state(0) >= map_size_3d_(0) ||
             pro_state(1) <= origin_(1) || pro_state(1) >= map_size_3d_(1) ||
             pro_state(2) <= origin_(2) || pro_state(2) >= map_size_3d_(2)) {
-          // cout << "outside map" << endl;
+            std::cout << "outside map" << endl;
           continue;
         }
 
@@ -156,14 +156,16 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
         if (pro_node != NULL && pro_node->node_state == IN_CLOSE_SET)
         {
           if (init_search)
-            // std::cout << "close" << std::endl;
+            std::cout << "close" << std::endl;
           continue;
         }
 
         /* vel feasibe */
         Eigen::Vector3d pro_v = pro_state.tail(3);
         if (fabs(pro_v(0)) > max_vel_ || fabs(pro_v(1)) > max_vel_ || fabs(pro_v(2)) > max_vel_) {
-          // cout << "vel infeasible" << endl;
+          // std::cout << "vel infeasible" << endl;
+          // ROS_INFO_STREAM("max_v " << max_vel_);
+          // ROS_INFO_STREAM("x " << pro_v(0) << " y " << pro_v(1) << " z " << pro_v(2) );
           continue;
         }
 
@@ -185,6 +187,8 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
           pos = xt.head(3);
 
           double dist = edt_environment_->evaluateCoarseEDT(pos, -1.0);
+          ROS_INFO_STREAM("dist " << dist);
+          ROS_INFO_STREAM("x: " << pos(0) << " " << pos(1) << " " << pos(2));
           if (dist <= margin_) {
             is_occ = true;
 
@@ -193,7 +197,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
         }
 
         if (is_occ) {
-          // cout << "collision" << endl;
+          std::cout << "collision" << endl;
           continue;
         }
 
@@ -268,9 +272,9 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
   }
 
   /* ---------- open set empty, no path ---------- */
-  cout << "open set empty, no path!" << endl;
-  cout << "use node num: " << use_node_num_ << endl;
-  cout << "iter num: " << iter_num_ << endl;
+  // cout << "open set empty, no path!" << endl;
+  // cout << "use node num: " << use_node_num_ << endl;
+  // cout << "iter num: " << iter_num_ << endl;
   return NO_PATH;
 }
 

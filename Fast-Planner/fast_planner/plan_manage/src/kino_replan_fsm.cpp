@@ -46,7 +46,7 @@ void KinoReplanFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
   trigger_ = true;
 
   if (target_type_ == TARGET_TYPE::MANUAL_TARGET) {
-    end_pt_ << msg->poses[0].pose.position.x, msg->poses[0].pose.position.y, 1.0;
+    end_pt_ << msg->poses[0].pose.position.x, msg->poses[0].pose.position.y, 2.0;
 
   } else if (target_type_ == TARGET_TYPE::PRESET_TARGET) {
     end_pt_(0)  = waypoints_[current_wp_][0];
@@ -162,11 +162,11 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
         return;
 
       } else if ((end_pt_ - pos).norm() < no_replan_thresh_) {
-        // cout << "near end" << endl;
+        std::cout << "near end" << endl;
         return;
 
       } else if ((info->start_pos_ - pos).norm() < replan_thresh_) {
-        // cout << "near start" << endl;
+        std::cout << "near start" << endl;
         return;
 
       } else {

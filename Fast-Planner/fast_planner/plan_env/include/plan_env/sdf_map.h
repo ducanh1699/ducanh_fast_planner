@@ -447,7 +447,10 @@ inline bool SDFMap::isInMap(const Eigen::Vector3i& idx) {
 }
 
 inline void SDFMap::posToIndex(const Eigen::Vector3d& pos, Eigen::Vector3i& id) {
-  for (int i = 0; i < 3; ++i) id(i) = floor((pos(i) - mp_.map_origin_(i)) * mp_.resolution_inv_);
+  for (int i = 0; i < 3; ++i) {
+    id(i) = floor((pos(i) - mp_.map_origin_(i)) * mp_.resolution_inv_);
+    // std::cout << id(i) << std::endl;
+  }
 }
 
 inline void SDFMap::indexToPos(const Eigen::Vector3i& id, Eigen::Vector3d& pos) {

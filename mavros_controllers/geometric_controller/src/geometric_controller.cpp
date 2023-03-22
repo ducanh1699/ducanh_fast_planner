@@ -80,6 +80,8 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
   land_service_ = nh_.advertiseService("land", &geometricCtrl::landCallback, this);
 
+  setpoint_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+
   nh_private_.param<string>("mavname", mav_name_, "iris");
   nh_private_.param<int>("ctrl_mode", ctrl_mode_, ERROR_QUATERNION);
   nh_private_.param<bool>("enable_sim", sim_enable_, true);
@@ -103,7 +105,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   nh_private_.param<double>("init_pos_x", initTargetPos_x_, 0.0);
   nh_private_.param<double>("init_pos_y", initTargetPos_y_, 0.0);
   nh_private_.param<double>("init_pos_z", initTargetPos_z_, 2.0);
-
+  targetOrien_ << 1.0, 0.0, 0.0, 0.0;
   targetPos_ << initTargetPos_x_, initTargetPos_y_, initTargetPos_z_;  // Initial Position
   targetVel_ << 0.0, 0.0, 0.0;
   mavPos_ << 0.0, 0.0, 0.0;
@@ -111,7 +113,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   g_ << 0.0, 0.0, -9.8;
   Kpos_ << -Kpos_x_, -Kpos_y_, -Kpos_z_;
   Kvel_ << -Kvel_x_, -Kvel_y_, -Kvel_z_;
-
+  error = 0.1;
   D_ << dx_, dy_, dz_;
 
   tau << tau_x, tau_y, tau_z;
@@ -135,6 +137,23 @@ void geometricCtrl::targetCallback(const geometry_msgs::TwistStamped &msg) {
     targetAcc_ = (targetVel_ - targetVel_prev_) / reference_request_dt_;
   else
     targetAcc_ = Eigen::Vector3d::Zero();
+}
+
+void geometricCtrl::pubPosition(const Eigen::Vector3d &target_position, const Vector4d &target_orientation){
+	geometry_msgs::PoseStamped target_pose_;
+
+	target_pose_.header.stamp = ros::Time::now();
+
+	target_pose_.pose.position.x = target_position(0);
+	target_pose_.pose.position.y = target_position(1);
+	target_pose_.pose.position.z = target_position(2);
+
+	target_pose_.pose.orientation.w = target_orientation(0);
+	target_pose_.pose.orientation.x = target_orientation(1);
+	target_pose_.pose.orientation.y = target_orientation(2);
+	target_pose_.pose.orientation.z = target_orientation(3);
+
+	setpoint_pose_pub_.publish(target_pose_);
 }
 
 void geometricCtrl::flattargetCallback(const controller_msgs::FlatTarget &msg) {
@@ -188,11 +207,12 @@ void geometricCtrl::multiDOFJointCallback(const trajectory_msgs::MultiDOFJointTr
 
   targetPos_ << pt.transforms[0].translation.x, pt.transforms[0].translation.y, pt.transforms[0].translation.z;
   targetVel_ << pt.velocities[0].linear.x, pt.velocities[0].linear.y, pt.velocities[0].linear.z;
-
+  ROS_INFO_STREAM("X: " << targetPos_(0) << " Y: " << targetPos_(1) << " Z: " << targetPos_(2));
   targetAcc_ << pt.accelerations[0].linear.x, pt.accelerations[0].linear.y, pt.accelerations[0].linear.z;
   targetJerk_ = Eigen::Vector3d::Zero();
   targetSnap_ = Eigen::Vector3d::Zero();
-
+  targetOrien_ << pt.transforms[0].rotation.w, pt.transforms[0].rotation.x, pt.transforms[0].rotation.y,
+                         pt.transforms[0].rotation.z;
   if (!velocity_yaw_) {
     Eigen::Quaterniond q(pt.transforms[0].rotation.w, pt.transforms[0].rotation.x, pt.transforms[0].rotation.y,
                          pt.transforms[0].rotation.z);
@@ -220,8 +240,21 @@ void geometricCtrl::mavtwistCallback(const geometry_msgs::TwistStamped &msg) {
 }
 
 bool geometricCtrl::landCallback(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response) {
-  node_state = LANDING;
+  node_state = LANDED;
   return true;
+}
+
+bool geometricCtrl::check_position(float error, Eigen::Vector3d current, Eigen::Vector3d target){
+
+	Eigen::Vector3d stop;
+	stop << target - current;
+	double a = stop.norm();
+
+	if (a <= error){
+		return true;
+	}
+	else
+		return false;
 }
 
 void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
@@ -229,8 +262,20 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
     case WAITING_FOR_HOME_POSE:
       waitForPredicate(&received_home_pose, "Waiting for home pose...");
       ROS_INFO("Got pose! Drone Ready to be armed.");
-      node_state = MISSION_EXECUTION;
+      node_state = POSITION_MODE;
       break;
+
+    case POSITION_MODE:
+      if(check_position(error, mavPos_, targetPos_))
+					{
+						node_state = MISSION_EXECUTION;
+					}
+					// ROS_INFO("Got pose! Drone Position mode");
+					// ROS_INFO_STREAM("Got pose! Drone Velocity x " << targetPos_(0) << " y " << targetPos_(1) << " z " << targetPos_(2));
+
+					pubPosition(targetPos_, targetOrien_);
+
+			break;
 
     case MISSION_EXECUTION: {
       Eigen::Vector3d desired_acc;
@@ -240,25 +285,38 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
         desired_acc = controlPosition(targetPos_, targetVel_, targetAcc_);
       }
       computeBodyRateCmd(cmdBodyRate_, desired_acc);
-      pubReferencePose(targetPos_, q_des);
-      pubRateCommands(cmdBodyRate_, q_des);
+      // pubPosition(targetPos_);
+      pubPosition(targetPos_, targetOrien_);
+      // pubReferencePose(targetPos_, q_des);
+      // pubRateCommands(cmdBodyRate_, q_des);
       appendPoseHistory();
       pubPoseHistory();
+      if (mavPos_(2) >= 5.0){
+        std::cout << "land" << std::endl;
+        node_state = LANDED;
+      }
+
       break;
     }
 
     case LANDING: {
-      geometry_msgs::PoseStamped landingmsg;
-      landingmsg.header.stamp = ros::Time::now();
-      landingmsg.pose = home_pose_;
-      landingmsg.pose.position.z = landingmsg.pose.position.z + 1.0;
-      target_pose_pub_.publish(landingmsg);
+      // geometry_msgs::PoseStamped landingmsg;
+      // landingmsg.header.stamp = ros::Time::now();
+      // landingmsg.pose = home_pose_;
+      // landingmsg.pose.position.z = landingmsg.pose.position.z + 1.0;
+      // target_pose_pub_.publish(landingmsg);
       node_state = LANDED;
       ros::spinOnce();
       break;
     }
     case LANDED:
       ROS_INFO("Landed. Please set to position control and disarm.");
+      if(current_state_.mode != "AUTO.LAND") {
+          land_set_mode_.request.custom_mode = "AUTO.LAND";
+          if(set_mode_client_.call(land_set_mode_) && land_set_mode_.response.mode_sent) {
+            ROS_INFO("AUTO LANDING MODE is required");
+        }
+      }
       cmdloop_timer_.stop();
       break;
   }

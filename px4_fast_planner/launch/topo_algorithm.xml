@@ -70,8 +70,8 @@
     <!-- depth filter -->
     <param name="sdf_map/use_depth_filter" value="true"/>
     <param name="sdf_map/depth_filter_tolerance" value="0.15"/>
-    <param name="sdf_map/depth_filter_maxdist"   value="7"/>
-    <param name="sdf_map/depth_filter_mindist"   value="0.2"/>
+    <param name="sdf_map/depth_filter_maxdist"   value="8.0"/>
+    <param name="sdf_map/depth_filter_mindist"   value="0.4"/>
     <param name="sdf_map/depth_filter_margin"    value="2"/>
     <param name="sdf_map/k_depth_scaling_factor" value="1000.0"/>
     <param name="sdf_map/skip_pixel" value="2"/>
@@ -82,11 +82,11 @@
     <param name="sdf_map/p_max"  value="0.90"/>
     <param name="sdf_map/p_occ"  value="0.80"/>
     <param name="sdf_map/min_ray_length" value="0.5"/>
-    <param name="sdf_map/max_ray_length" value="4.5"/>
+    <param name="sdf_map/max_ray_length" value="8.0"/>
 
     <param name="sdf_map/esdf_slice_height" value="0.3"/>
     <param name="sdf_map/visualization_truncate_height"   value="2.5"/>
-    <param name="sdf_map/virtual_ceil_height"   value="3.0"/>
+    <param name="sdf_map/virtual_ceil_height"   value="5.0"/>
     <param name="sdf_map/show_occ_time"  value="false"/>
     <param name="sdf_map/show_esdf_time" value="false"/>
     <param name="sdf_map/pose_type"     value="1"/>  
@@ -97,7 +97,7 @@
     <param name="manager/max_acc" value="$(arg max_acc)" type="double"/>
     <param name="manager/max_jerk" value="4" type="double"/>
     <param name="manager/dynamic_environment" value="0" type="int"/>
-    <param name="manager/local_segment_length" value="7.0" type="double"/>
+    <param name="manager/local_segment_length" value="15.0" type="double"/>
     <param name="manager/clearance_threshold" value="0.2" type="double"/>
     <param name="manager/control_points_distance" value="0.3" type="double"/>
 
@@ -110,14 +110,14 @@
     <param name="topo_prm/sample_inflate_x" value="1.0" type="double"/>
     <param name="topo_prm/sample_inflate_y" value="5.5" type="double"/>
     <param name="topo_prm/sample_inflate_z" value="1.0" type="double"/>
-    <param name="topo_prm/clearance" value="0.3" type="double"/>
+    <param name="topo_prm/clearance" value="0.3" type="double"/>  <!--distance between two guad -->
     <param name="topo_prm/max_sample_time" value="0.005" type="double"/>
     <param name="topo_prm/max_sample_num" value="2000" type="int"/>
-    <param name="topo_prm/max_raw_path" value="300" type="int"/>
-    <param name="topo_prm/max_raw_path2" value="25" type="int"/>
-    <param name="topo_prm/short_cut_num" value="1" type="int"/>
+    <param name="topo_prm/max_raw_path" value="100" type="int"/> <!-- Max path use in depth path search -->
+    <param name="topo_prm/max_raw_path2" value="25" type="int"/> <!--Max raw path to use with less node-->
+    <param name="topo_prm/short_cut_num" value="1" type="int"/>  <!-- Not used-->
     <param name="topo_prm/reserve_num" value="6" type="int"/>
-    <param name="topo_prm/ratio_to_short" value="5.5" type="double"/>
+    <param name="topo_prm/ratio_to_short" value="5.5" type="double"/> <!--ratio between lenght of path and short path-->
     <param name="topo_prm/parallel_shortcut" value="true" type="bool"/>
 
   <!-- trajectory optimization -->
@@ -129,7 +129,7 @@
     <param name="optimization/lambda6" value="10.0" type="double"/>
     <param name="optimization/lambda7" value="20.0" type="double"/>
     
-    <param name="optimization/dist0" value="0.4" type="double"/>
+    <param name="optimization/dist0" value="0.6" type="double"/>
     <param name="optimization/dist1" value="0.0" type="double"/>
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>
     <param name="optimization/max_acc" value="$(arg max_acc)" type="double"/>

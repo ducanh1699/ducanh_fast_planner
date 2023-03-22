@@ -364,17 +364,19 @@ void SDFMap::projectDepthImage() {
       row_ptr = md_.depth_image_.ptr<uint16_t>(v);
 
       for (int u = 0; u < cols; u++) {
-
+        
         Eigen::Vector3d proj_pt;
         depth = (*row_ptr++) / mp_.k_depth_scaling_factor_;
-        proj_pt(0) = (u - mp_.cx_) * depth / mp_.fx_;
-        proj_pt(1) = (v - mp_.cy_) * depth / mp_.fy_;
-        proj_pt(2) = depth;
+        if(depth > 1.0){
+          proj_pt(0) = (u - mp_.cx_) * depth / mp_.fx_;
+          proj_pt(1) = (v - mp_.cy_) * depth / mp_.fy_;
+          proj_pt(2) = depth;
 
-        proj_pt = camera_r * proj_pt + md_.camera_pos_;
+          proj_pt = camera_r * proj_pt + md_.camera_pos_;
 
         if (u == 320 && v == 240) std::cout << "depth: " << depth << std::endl;
-        md_.proj_points_[md_.proj_points_cnt++] = proj_pt;
+          md_.proj_points_[md_.proj_points_cnt++] = proj_pt;
+        }
       }
     }
   }
@@ -415,7 +417,12 @@ void SDFMap::projectDepthImage() {
           pt_cur(0) = (u - mp_.cx_) * depth / mp_.fx_;
           pt_cur(1) = (v - mp_.cy_) * depth / mp_.fy_;
           pt_cur(2) = depth;
-
+          // std::cout << depth << std::endl;
+          // if (depth < 0.5){
+          //   std::cout << "error "<<  depth << std::endl;
+          // }
+          // std::cout << depth << std::endl;
+          // std::cout << "error "<<  depth << std::endl;
           pt_world = camera_r * pt_cur + md_.camera_pos_;
           // if (!isInMap(pt_world)) {
           //   pt_world = closetPointInMap(pt_world, md_.camera_pos_);
@@ -424,20 +431,20 @@ void SDFMap::projectDepthImage() {
           md_.proj_points_[md_.proj_points_cnt++] = pt_world;
 
           // check consistency with last image, disabled...
-          if (false) {
-            pt_reproj = last_camera_r_inv * (pt_world - md_.last_camera_pos_);
-            double uu = pt_reproj.x() * mp_.fx_ / pt_reproj.z() + mp_.cx_;
-            double vv = pt_reproj.y() * mp_.fy_ / pt_reproj.z() + mp_.cy_;
+          // if (false) {
+          //   pt_reproj = last_camera_r_inv * (pt_world - md_.last_camera_pos_);
+          //   double uu = pt_reproj.x() * mp_.fx_ / pt_reproj.z() + mp_.cx_;
+          //   double vv = pt_reproj.y() * mp_.fy_ / pt_reproj.z() + mp_.cy_;
 
-            if (uu >= 0 && uu < cols && vv >= 0 && vv < rows) {
-              if (fabs(md_.last_depth_image_.at<uint16_t>((int)vv, (int)uu) * inv_factor -
-                       pt_reproj.z()) < mp_.depth_filter_tolerance_) {
-                md_.proj_points_[md_.proj_points_cnt++] = pt_world;
-              }
-            } else {
-              md_.proj_points_[md_.proj_points_cnt++] = pt_world;
-            }
-          }
+          //   if (uu >= 0 && uu < cols && vv >= 0 && vv < rows) {
+          //     if (fabs(md_.last_depth_image_.at<uint16_t>((int)vv, (int)uu) * inv_factor -
+          //              pt_reproj.z()) < mp_.depth_filter_tolerance_) {
+          //       md_.proj_points_[md_.proj_points_cnt++] = pt_world;
+          //     }
+          //   } else {
+          //     md_.proj_points_[md_.proj_points_cnt++] = pt_world;
+          //   }
+          // }
         }
       }
     }
@@ -833,7 +840,7 @@ void SDFMap::odomCallback(const nav_msgs::OdometryConstPtr& odom) {
 }
 
 void SDFMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img) {
-
+  
   pcl::PointCloud<pcl::PointXYZ> latest_cloud;
   pcl::fromROSMsg(*img, latest_cloud);
 
@@ -921,7 +928,7 @@ void SDFMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img) {
 
   boundIndex(md_.local_bound_min_);
   boundIndex(md_.local_bound_max_);
-
+  ROS_INFO_STREAM("Receive");
   md_.esdf_need_update_ = true;
 }
 

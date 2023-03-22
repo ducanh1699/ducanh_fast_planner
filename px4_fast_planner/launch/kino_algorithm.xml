@@ -73,7 +73,7 @@
     <param name="sdf_map/fx" value="$(arg fx)"/>
     <param name="sdf_map/fy" value="$(arg fy)"/>
     <!-- depth filter -->
-    <param name="sdf_map/use_depth_filter" value="true"/>
+    <param name="sdf_map/use_depth_filter" value="false"/>
     <param name="sdf_map/depth_filter_tolerance" value="0.15"/>
     <param name="sdf_map/depth_filter_maxdist"   value="5.0"/>
     <param name="sdf_map/depth_filter_mindist"   value="0.2"/>
@@ -154,9 +154,9 @@
     <param name="bspline/limit_acc" value="$(arg max_acc)" type="double"/>
     <param name="bspline/limit_ratio" value="1.1" type="double"/>
 
-    <param name="bspline/limit_vel" value="$(arg max_vel)" type="double"/>
+    <!-- <param name="bspline/limit_vel" value="$(arg max_vel)" type="double"/>
     <param name="bspline/limit_acc" value="$(arg max_acc)" type="double"/>
-    <param name="bspline/limit_ratio" value="1.1" type="double"/>
+    <param name="bspline/limit_ratio" value="1.1" type="double"/> -->
 
   </node>
 

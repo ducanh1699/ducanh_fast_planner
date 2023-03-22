@@ -6,10 +6,12 @@
 
   <arg name="odom_topic" default="/mavros/local_position/odom" />
   <arg name="camera_pose_topic" default="/camera/pose"/>
-  <arg name="depth_topic" default="/camera/depth/image_raw"/>
+  <!-- <arg name="depth_topic" default="/camera/depth/image_raw"/> -->
+  <arg name="depth_topic" default="/camera/depth/image_rect_raw"/>
 
-  <arg name="max_vel" default="1.0" />
-  <arg name="max_acc" default="2.5" />
+
+  <arg name="max_vel" default="0.5" />
+  <arg name="max_acc" default="0.25" />
 
   <!-- main algorithm params -->
   <include file="$(find px4_fast_planner)/launch/kino_algorithm.xml">
@@ -27,7 +29,7 @@
 
     <!-- topic of point cloud measurement, such as from LIDAR  -->
     <!-- don't set camera pose and depth, if you already set this one! -->
-    <arg name="cloud_topic" value="/pcl_render_node/cloud"/>
+    <arg name="cloud_topic" value="/depth/color/points"/>
 
      <!-- intrinsic params of the depth camera gazebo model 640x480 -->
     <arg name="cx" value="320"/>

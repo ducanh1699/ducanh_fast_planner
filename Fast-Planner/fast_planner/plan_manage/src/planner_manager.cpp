@@ -647,7 +647,7 @@ void FastPlannerManager::planYaw(const Eigen::Vector3d& start_yaw) {
   plan_data_.dt_yaw_      = dt_yaw;
   plan_data_.dt_yaw_path_ = dt_yaw;
 
-  std::cout << "plan heading: " << (ros::Time::now() - t1).toSec() << std::endl;
+  // std::cout << "plan heading: " << (ros::Time::now() - t1).toSec() << std::endl;
 }
 
 void FastPlannerManager::calcNextYaw(const double& last_yaw, double& yaw) {

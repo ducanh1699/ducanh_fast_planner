@@ -105,6 +105,9 @@ class geometricCtrl {
   ros::Publisher referencePosePub_;
   ros::Publisher posehistoryPub_;
   ros::Publisher systemstatusPub_;
+
+  ros::Publisher setpoint_pose_pub_; // publish target pose to drone
+
   ros::ServiceClient arming_client_;
   ros::ServiceClient set_mode_client_;
   ros::ServiceServer ctrltriggerServ_;
@@ -126,13 +129,14 @@ class geometricCtrl {
   double dx_, dy_, dz_;
 
   mavros_msgs::State current_state_;
-  mavros_msgs::SetMode offb_set_mode_;
+  mavros_msgs::SetMode offb_set_mode_, land_set_mode_;
   mavros_msgs::CommandBool arm_cmd_;
   std::vector<geometry_msgs::PoseStamped> posehistory_vector_;
   MAV_STATE companion_state_ = MAV_STATE::MAV_STATE_ACTIVE;
 
   double initTargetPos_x_, initTargetPos_y_, initTargetPos_z_;
   Eigen::Vector3d targetPos_, targetVel_, targetAcc_, targetJerk_, targetSnap_, targetPos_prev_, targetVel_prev_;
+  Eigen::Vector4d targetOrien_;
   Eigen::Vector3d mavPos_, mavVel_, mavRate_;
   Eigen::Vector3d last_ref_acc_{Eigen::Vector3d::Zero()};
   double mavYaw_;
@@ -144,6 +148,10 @@ class geometricCtrl {
   double tau_x, tau_y, tau_z;
   double Kpos_x_, Kpos_y_, Kpos_z_, Kvel_x_, Kvel_y_, Kvel_z_;
   int posehistory_window_;
+  double error;
+
+
+  void pubPosition(const Vector3d &target_position, const Vector4d &target_orientation);
 
   void pubMotorCommands();
   void pubRateCommands(const Eigen::Vector4d &cmd, const Eigen::Vector4d &target_attitude);
@@ -162,6 +170,9 @@ class geometricCtrl {
   void mavposeCallback(const geometry_msgs::PoseStamped &msg);
   void mavtwistCallback(const geometry_msgs::TwistStamped &msg);
   void statusloopCallback(const ros::TimerEvent &event);
+
+  bool check_position(float error, Eigen::Vector3d current, Eigen::Vector3d target);
+
   bool ctrltriggerCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   bool landCallback(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response);
   geometry_msgs::PoseStamped vector3d2PoseStampedMsg(Eigen::Vector3d &position, Eigen::Vector4d &orientation);
@@ -176,7 +187,7 @@ class geometricCtrl {
   Eigen::Vector4d jerkcontroller(const Eigen::Vector3d &ref_jerk, const Eigen::Vector3d &ref_acc,
                                  Eigen::Vector4d &ref_att, Eigen::Vector4d &curr_att);
 
-  enum FlightState { WAITING_FOR_HOME_POSE, MISSION_EXECUTION, LANDING, LANDED } node_state;
+  enum FlightState { POSITION_MODE, WAITING_FOR_HOME_POSE, MISSION_EXECUTION, LANDING, LANDED } node_state;
 
   template <class T>
   void waitForPredicate(const T *pred, const std::string &msg, double hz = 2.0) {
